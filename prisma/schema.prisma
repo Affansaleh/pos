@@ -1,0 +1,118 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  role         String      @default("CASHIER")
+  branchId     String?
+  branch       Branch?     @relation(fields: [branchId], references: [id])
+  sales        Sale[]
+  expenses     Expense[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Branch {
+  id               String           @id @default(uuid())
+  name             String
+  address          String?
+  phone            String?
+  isLocked         Boolean          @default(false)
+  subscriptionType String           @default("MONTHLY")
+  expiryDate       DateTime?
+  users            User[]
+  products         Product[]
+  sales            Sale[]
+  categories       Category[]
+  expenses         Expense[]
+  createdAt        DateTime         @default(now())
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String
+  branchId  String
+  branch    Branch    @relation(fields: [branchId], references: [id])
+  products  Product[]
+}
+
+model Product {
+  id                      String      @id @default(uuid())
+  name                    String
+  barcode                 String?
+  categoryId              String?
+  category                Category?   @relation(fields: [categoryId], references: [id])
+  branchId                String
+  branch                  Branch      @relation(fields: [branchId], references: [id])
+  productType             String      @default("STANDARD")
+  quantity                Int         @default(0)
+  totalStockBottles       Int         @default(0)
+  mlPerBottle             Float       @default(0.0)
+  activeBottleRemainingMl Float       @default(0.0)
+  nicotineStrength        String?
+  flavorName              String?
+  brand                   String?
+  purchasePrice           Float       @default(0.0)
+  bottleSalePrice         Float       @default(0.0)
+  pricePerMl              Float       @default(0.0)
+  salePrice               Float       @default(0.0)
+  lowStockThreshold       Int         @default(5)
+  saleItems               SaleItem[]
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+}
+
+model Sale {
+  id              String     @id @default(uuid())
+  invoiceNo       String     @unique
+  branchId        String
+  branch          Branch     @relation(fields: [branchId], references: [id])
+  userId          String
+  user            User       @relation(fields: [userId], references: [id])
+  subtotal        Float
+  discount        Float      @default(0.0)
+  total           Float
+  paymentMethod   String     @default("CASH")
+  isOfflineSynced Boolean    @default(true)
+  notes           String?
+  items           SaleItem[]
+  createdAt       DateTime   @default(now())
+}
+
+model SaleItem {
+  id           String   @id @default(uuid())
+  saleId       String
+  sale         Sale     @relation(fields: [saleId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  quantity     Int      @default(1)
+  mlSold       Float    @default(0.0)
+  isFullBottle Boolean  @default(true)
+  unitPrice    Float
+  discount     Float    @default(0.0)
+  totalPrice   Float
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  title       String
+  amount      Float
+  category    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+}
